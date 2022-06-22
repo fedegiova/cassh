@@ -671,18 +671,24 @@ class Tools():
         # Load SSH CA
         ca_ssh = Authority(self.server_opts['ca'], self.server_opts['krl'])
 
+        if expiry == 'forever':
+            end_time = 2147483646
+        else:
+            end_time = time() + str2date(expiry)
+            expiry = '+' + expiry
+
         # Sign the key
         try:
             ks = self.server_opts['keyvalidityintervalstart']
             if ks is None:
-                exp = '+'+expiry
+                exp = expiry
             else:
-                exp = ks+':+'+expiry
+                exp = ks+expiry
             cert_contents = ca_ssh.sign_public_user_key(\
                 tmp_pubkey_name, username, exp, principals)
             if db_cursor is not None:
                 db_cursor.execute('UPDATE USERS SET STATE=0, EXPIRATION=(%s) WHERE NAME=(%s)', \
-                    (time() + str2date(expiry), username))
+                    (end_time, username))
         except Exception:
             cert_contents = 'Error : signing key'
         return cert_contents
