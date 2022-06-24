@@ -683,7 +683,7 @@ class Tools():
             if ks is None:
                 exp = expiry
             else:
-                exp = ks+expiry
+                exp = ks+":"+expiry
             cert_contents = ca_ssh.sign_public_user_key(\
                 tmp_pubkey_name, username, exp, principals)
             if db_cursor is not None:

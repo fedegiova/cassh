@@ -54,3 +54,22 @@ else
     echo "[FAIL ${BASH_SOURCE}:+${LINENO}] Test signing key when changing expiry : ${RESP}"
 fi
 rm -f /tmp/test-cert
+
+######################################
+## ADMIN SET GUEST B EXPIRY FOREVER ##
+######################################
+RESP=$(curl -s -X PATCH -d "realname=${SYSADMIN_REALNAME}&password=${SYSADMIN_PASSWORD}" "${CASSH_SERVER_URL}"/admin/"${GUEST_B_USERNAME}" -d "expiry=forever")
+if [ "${RESP}" == "OK: expiry=forever for ${GUEST_B_USERNAME}" ]; then
+    echo "[OK] Test set expiry forever ${GUEST_B_USERNAME}"
+else
+    echo "[FAIL ${BASH_SOURCE}:+${LINENO}] Test set expiry to 3 days for ${GUEST_B_USERNAME} : ${RESP}"
+fi
+
+RESP=$(curl -s -X POST -d "username=${GUEST_B_USERNAME}&realname=${GUEST_B_REALNAME}&password=${GUEST_B_PASSWORD}&pubkey=${GUEST_B_PUB_KEY}" "${CASSH_SERVER_URL}"/client)
+echo "${RESP}" > /tmp/test-cert
+if ssh-keygen -L -f /tmp/test-cert >/dev/null 2>&1; then
+    echo "[OK] Test signing key when changing expiry"
+else
+    echo "[FAIL ${BASH_SOURCE}:+${LINENO}] Test signing key when changing expiry : ${RESP}"
+fi
+rm -f /tmp/test-cert
