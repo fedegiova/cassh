@@ -10,6 +10,8 @@ Written by Nicolas BEGUIER (nicolas_beguier@hotmail.com)
 
 from os import remove
 from subprocess import check_output, CalledProcessError
+import subprocess
+import logging
 
 def get_fingerprint(public_key_filename):
     """
@@ -37,6 +39,9 @@ def get_cert_contents(public_key_filename):
     remove(cert_filename)
     return cert_contents
 
+class AuthorityException(RuntimeError):
+    pass
+
 class Authority():
     """
     Class which control authority certification
@@ -49,32 +54,45 @@ class Authority():
         """
         Sign public key
         """
-        check_output([
+        cmd=[
             'ssh-keygen',
             '-s', self.ca_key,
             '-I', username,
             '-V', duration,
             '-n', principals,
-            public_key_filename])
-        return get_cert_contents(public_key_filename)
+            public_key_filename]
+        try:
+            check_output(cmd,stderr=subprocess.PIPE)
+            return get_cert_contents(public_key_filename)
+        except subprocess.CalledProcessError as e:
+            logging.exception('Error during signing %s\ncommand: %s',e.stderr.decode('ascii'),cmd)
+            raise AuthorityException('Signing error %s' % (e.stderr.decode('ascii').split('\n')[0])) from e
 
     def generate_empty_krl(self):
         """
         Generates an empty KRL file.
         """
-        check_output([
-            'ssh-keygen',
-            '-k',
-            '-f', self.krl])
+        try:
+            check_output([
+                'ssh-keygen',
+                '-k',
+                '-f', self.krl],stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            logging.exception('Error during signing %s\ncommand: %s',e.stderr.decode('ascii'),cmd)
+            raise AuthorityException('Signing error %s' % (e.stderr.decode('ascii').split('\n')[0])) from e
 
     def update_krl(self, public_key_filename):
         """
         Update KRL by revoking key.
         """
-        check_output([
-            'ssh-keygen',
-            '-k',
-            '-f', self.krl,
-            '-u',
-            '-s', self.ca_key,
-            public_key_filename])
+        try:
+            check_output([
+                'ssh-keygen',
+                '-k',
+                '-f', self.krl,
+                '-u',
+                '-s', self.ca_key,
+                public_key_filename],stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            logging.exception('Error during signing %s\ncommand: %s',e.stderr.decode('ascii'),cmd)
+            raise AuthorityException('Signing error %s' % (e.stderr.decode('ascii').split('\n')[0])) from e

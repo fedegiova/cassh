@@ -30,6 +30,7 @@ GUEST_A_PASSWORD=hG9%60P%3AJznneDcTfN%7D6KLr%2DV%5Ev%24EKR%3CDrx%22qj%28%5C%2Bf 
 
 # USER: guest.b
 GUEST_B_PUB_KEY=$(cat "${KEY_3_EXAMPLE}".pub)
+GUEST_B_PRIV_KEY=$(cat "${KEY_3_EXAMPLE}")
 GUEST_B_ALT_PUB_KEY=$(cat "${KEY_3_EXAMPLE}".pub | awk '{print $1" "$2" some-random-comment"}')
 GUEST_B_USERNAME=guestb$(pwgen -A -0 10)
 GUEST_B_REALNAME=guest.b@example.org
@@ -73,5 +74,6 @@ fi
 . ./tests/test_principals.sh
 . ./tests/test_principals_search.sh
 . ./tests/test_admin_set.sh
+. ./tests/test_sign.sh
 . ./tests/test_admin_delete.sh
 . ./tests/test_cluster.sh

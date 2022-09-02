@@ -33,7 +33,7 @@ from requests.exceptions import ConnectionError as req_ConnectionError
 from web import data, ctx, header
 
 # Own library
-from ssh_utils import Authority
+from ssh_utils import Authority,AuthorityException
 import lib.constants as constants
 
 # DEBUG
@@ -668,6 +668,11 @@ class Tools():
         """
         Sign a key and return cert_contents
         """
+        # Verify key type
+        with open(tmp_pubkey_name,'r') as f:
+            header = f.readline()
+            if header.startswith('-----BEGIN OPENSSH PRIVATE KEY-----'):
+                raise RuntimeError("Trying to use private key for signing, must use public one")
         # Load SSH CA
         ca_ssh = Authority(self.server_opts['ca'], self.server_opts['krl'])
 
@@ -689,8 +694,12 @@ class Tools():
             if db_cursor is not None:
                 db_cursor.execute('UPDATE USERS SET STATE=0, EXPIRATION=(%s) WHERE NAME=(%s)', \
                     (end_time, username))
-        except Exception:
-            cert_contents = 'Error : signing key'
+        except AuthorityException as e:
+            print('Exception signing key',e)
+            raise RuntimeError("Error signing key %s" %(e))
+        except Exception as e:
+            print('Exception signing key',e)
+            raise RuntimeError("Error signing key")
         return cert_contents
 
     def sql_to_json(self, result, is_list=False):

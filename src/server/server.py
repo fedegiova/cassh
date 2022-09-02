@@ -25,6 +25,7 @@ import web
 from ssh_utils import get_fingerprint
 import lib.constants as constants
 import lib.tools as tools
+import logging
 
 # DEBUG
 # from pdb import set_trace as st
@@ -367,16 +368,22 @@ class Client():
             remove(tmp_pubkey.name)
             return tools.response_render("Status: %s" % constants.STATES[user[2]])
 
-        cert_contents = TOOLS.sign_key(
-            tmp_pubkey.name, username, expiry, full_principals, db_cursor=cur)
-
-        remove(tmp_pubkey.name)
-        pg_conn.commit()
-        cur.close()
-        pg_conn.close()
-        return tools.response_render(
-            cert_contents,
-            content_type='application/octet-stream')
+        try:
+            cert_contents = TOOLS.sign_key(
+                tmp_pubkey.name, username, expiry, full_principals, db_cursor=cur)
+            return tools.response_render(
+                cert_contents,
+                content_type='application/octet-stream')
+        except RuntimeError as e:
+            logging.exception(e)
+            return tools.response_render(
+                'Error : Signature error: %s' % (e),
+                http_code='400 Bad request')
+        finally:
+            remove(tmp_pubkey.name)
+            pg_conn.commit()
+            cur.close()
+            pg_conn.close()
 
     def PUT(self):
         """
